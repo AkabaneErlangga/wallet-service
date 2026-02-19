@@ -6,3 +6,47 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model User {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  email     String   @unique
+  name      String?
+  wallets   Wallet[]
+}
+
+model Wallet {
+  id       Int     @id @default(autoincrement())
+  ownerId  Int
+  owner    User    @relation(fields: [ownerId], references: [id])
+  currency String
+  balance  Decimal @db.Decimal(30, 2)
+  status   Status  @default(ACTIVE)
+
+  ledgers Ledger[]
+
+  @@unique([ownerId, currency])
+}
+
+model Ledger {
+  id             Int      @id @default(autoincrement())
+  walletId       Int
+  wallet         Wallet   @relation(fields: [walletId], references: [id])
+  type           Type
+  amount         Decimal  @db.Decimal(30, 2)
+  currency       String
+  idempotencyKey String?  @unique
+  createdAt      DateTime @default(now())
+}
+
+enum Status {
+  ACTIVE
+  SUSPENDED
+}
+
+enum Type {
+  TOPUP
+  PAYMENT
+  TRANSFER_IN
+  TRANSFER_OUT
+}
