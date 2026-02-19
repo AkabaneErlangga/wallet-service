@@ -1,16 +1,18 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { validationSchema } from './config/env.validation';
-import { HealthController } from './modules/health/health.controller';
-import { PinoLoggerModule } from './infrastructure/logger/pino-logger.module';
 import { PrismaService } from './infrastructure/database/prisma.service';
+import { PinoLoggerModule } from './infrastructure/logger/pino-logger.module';
 import { ExampleModule } from './modules/example/example.module';
+import { HealthController } from './modules/health/health.controller';
+import { WalletsModule } from './modules/wallets/wallets.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, validationSchema }),
     PinoLoggerModule,
     ExampleModule,
+    WalletsModule,
   ],
   controllers: [HealthController],
   providers: [PrismaService],

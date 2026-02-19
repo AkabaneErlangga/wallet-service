@@ -1,0 +1,38 @@
+meta {
+  name: HealthController_check
+  type: http
+  seq: 1
+  tags: [
+    health
+  ]
+}
+
+get {
+  url: {{baseUrl}}/api/v1/health
+  body: none
+  auth: inherit
+}
+
+example {
+  name: 200 Response
+  
+  request: {
+    url: {{baseUrl}}/api/v1/health
+    method: GET
+    mode: none
+  }
+  
+  response: {
+    status: {
+      code: 200
+      text: OK
+    }
+  
+    body: {
+      type: text
+      content: '''
+  
+      '''
+    }
+  }
+}
