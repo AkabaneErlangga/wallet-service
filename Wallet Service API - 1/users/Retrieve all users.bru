@@ -1,0 +1,39 @@
+meta {
+  name: Retrieve all users
+  type: http
+  seq: 2
+  tags: [
+    users
+  ]
+}
+
+get {
+  url: {{baseUrl}}/api/v1/users
+  body: none
+  auth: inherit
+}
+
+example {
+  name: 200 Response
+  description: List of users
+  
+  request: {
+    url: {{baseUrl}}/api/v1/users
+    method: GET
+    mode: none
+  }
+  
+  response: {
+    status: {
+      code: 200
+      text: OK
+    }
+  
+    body: {
+      type: text
+      content: '''
+  
+      '''
+    }
+  }
+}

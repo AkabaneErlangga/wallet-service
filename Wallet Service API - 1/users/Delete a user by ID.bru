@@ -1,0 +1,74 @@
+meta {
+  name: Delete a user by ID
+  type: http
+  seq: 5
+  tags: [
+    users
+  ]
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/users/:id
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 
+}
+
+example {
+  name: 204 Response
+  description: User deleted successfully
+  
+  request: {
+    url: {{baseUrl}}/api/v1/users/:id
+    method: DELETE
+    mode: none
+    params:path: {
+      id: 
+    }
+  }
+  
+  response: {
+    status: {
+      code: 204
+      text: No Content
+    }
+  
+    body: {
+      type: text
+      content: '''
+  
+      '''
+    }
+  }
+}
+
+example {
+  name: 404 Response
+  description: User not found
+  
+  request: {
+    url: {{baseUrl}}/api/v1/users/:id
+    method: DELETE
+    mode: none
+    params:path: {
+      id: 
+    }
+  }
+  
+  response: {
+    status: {
+      code: 404
+      text: Not Found
+    }
+  
+    body: {
+      type: text
+      content: '''
+  
+      '''
+    }
+  }
+}
