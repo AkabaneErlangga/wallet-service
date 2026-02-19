@@ -1,0 +1,93 @@
+meta {
+  name: Create a new wallet
+  type: http
+  seq: 1
+  tags: [
+    wallets
+  ]
+}
+
+post {
+  url: {{baseUrl}}/api/v1/wallets
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "ownerId": 1,
+    "currency": "USD"
+  }
+}
+
+example {
+  name: 201 Response
+  description: Wallet created successfully
+  
+  request: {
+    url: {{baseUrl}}/api/v1/wallets
+    method: POST
+    mode: json
+    body:json: {
+      {
+        "ownerId": 1,
+        "currency": "USD"
+      }
+    }
+  }
+  
+  response: {
+    headers: {
+      Content-Type: application/json
+    }
+  
+    status: {
+      code: 201
+      text: Created
+    }
+  
+    body: {
+      type: json
+      content: '''
+        {
+          "id": 1,
+          "ownerId": 1,
+          "currency": "USD",
+          "balance": "0.00",
+          "status": "ACTIVE"
+        }
+      '''
+    }
+  }
+}
+
+example {
+  name: 400 Response
+  description: Invalid request body
+  
+  request: {
+    url: {{baseUrl}}/api/v1/wallets
+    method: POST
+    mode: json
+    body:json: {
+      {
+        "ownerId": 1,
+        "currency": "USD"
+      }
+    }
+  }
+  
+  response: {
+    status: {
+      code: 400
+      text: Bad Request
+    }
+  
+    body: {
+      type: text
+      content: '''
+  
+      '''
+    }
+  }
+}

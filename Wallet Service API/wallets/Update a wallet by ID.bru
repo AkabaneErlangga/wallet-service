@@ -1,0 +1,140 @@
+meta {
+  name: Update a wallet by ID
+  type: http
+  seq: 4
+  tags: [
+    wallets
+  ]
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/wallets/:id
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 
+}
+
+body:json {
+  {
+    "ownerId": 1,
+    "currency": "USD"
+  }
+}
+
+example {
+  name: 200 Response
+  description: Wallet updated successfully
+  
+  request: {
+    url: {{baseUrl}}/api/v1/wallets/:id
+    method: PATCH
+    mode: json
+    params:path: {
+      id: 
+    }
+  
+    body:json: {
+      {
+        "ownerId": 1,
+        "currency": "USD"
+      }
+    }
+  }
+  
+  response: {
+    headers: {
+      Content-Type: application/json
+    }
+  
+    status: {
+      code: 200
+      text: OK
+    }
+  
+    body: {
+      type: json
+      content: '''
+        {
+          "id": 1,
+          "ownerId": 1,
+          "currency": "USD",
+          "balance": "0.00",
+          "status": "ACTIVE"
+        }
+      '''
+    }
+  }
+}
+
+example {
+  name: 400 Response
+  description: Invalid request body
+  
+  request: {
+    url: {{baseUrl}}/api/v1/wallets/:id
+    method: PATCH
+    mode: json
+    params:path: {
+      id: 
+    }
+  
+    body:json: {
+      {
+        "ownerId": 1,
+        "currency": "USD"
+      }
+    }
+  }
+  
+  response: {
+    status: {
+      code: 400
+      text: Bad Request
+    }
+  
+    body: {
+      type: text
+      content: '''
+  
+      '''
+    }
+  }
+}
+
+example {
+  name: 404 Response
+  description: Wallet not found
+  
+  request: {
+    url: {{baseUrl}}/api/v1/wallets/:id
+    method: PATCH
+    mode: json
+    params:path: {
+      id: 
+    }
+  
+    body:json: {
+      {
+        "ownerId": 1,
+        "currency": "USD"
+      }
+    }
+  }
+  
+  response: {
+    status: {
+      code: 404
+      text: Not Found
+    }
+  
+    body: {
+      type: text
+      content: '''
+  
+      '''
+    }
+  }
+}
