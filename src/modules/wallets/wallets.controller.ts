@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBody,
   ApiCreatedResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
@@ -20,6 +21,7 @@ import {
 } from '@nestjs/swagger';
 import { CreateWalletDto } from './dto/create-wallet.dto';
 import { TopupWalletDto } from './dto/topup-wallet.dto';
+import { TransferWalletDto } from './dto/transfer-wallet.dto';
 import { UpdateWalletDto } from './dto/update-wallet.dto';
 import { Wallet } from './entities/wallet.entity';
 import { WalletsService } from './wallets.service';
@@ -79,7 +81,26 @@ export class WalletsController {
   @ApiOkResponse({ description: 'Wallet topped up successfully', type: Wallet })
   @ApiBadRequestResponse({ description: 'Invalid request body' })
   topup(
-    @Body() topupWalletDto: TopupWalletDto): Promise<void> {
+    @Body() topupWalletDto: TopupWalletDto): Promise<Wallet> {
     return this.walletsService.topup(topupWalletDto);
+  }
+
+  @Post('transfer')
+  @ApiOperation({ summary: 'Transfer funds from a wallet' })
+  @ApiOkResponse({ description: 'Funds transferred successfully', type: Wallet })
+  @ApiBadRequestResponse({ description: 'Invalid request body or insufficient balance' })
+  @ApiBody({
+    schema: {
+      example: {
+        fromWalletId: 'wallet-1',
+        toWalletId: 'wallet-2',
+        amount: 500,
+        idempotencyKey: 'transfer-unique-123',
+      },
+    },
+  })
+  transfer(
+    @Body() transferWalletDto: TransferWalletDto): Promise<Wallet> {
+    return this.walletsService.transfer(transferWalletDto);
   }
 }

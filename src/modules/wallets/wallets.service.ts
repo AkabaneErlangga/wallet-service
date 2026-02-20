@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, Wallet as PrismaWallet } from '@prisma/client';
 import { normalizeAmount } from 'src/common/utils/money.util';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
 import { CreateWalletDto } from './dto/create-wallet.dto';
 import { TopupWalletDto } from './dto/topup-wallet.dto';
+import { TransferWalletDto } from './dto/transfer-wallet.dto';
 import { UpdateWalletDto } from './dto/update-wallet.dto';
 import { Wallet, WalletStatus } from './entities/wallet.entity';
 
@@ -48,7 +49,8 @@ export class WalletsService {
     await this.prisma.wallet.delete({ where: { id } });
   }
 
-  async topup(dto: TopupWalletDto): Promise<void> {
+  async topup(dto: TopupWalletDto): Promise<Wallet> {
+    let updatedWallet: PrismaWallet;
     await this.prisma.$transaction(async (tx) => {
       // 1. Find wallet
       const wallet = await tx.wallet.findUnique({
@@ -65,7 +67,7 @@ export class WalletsService {
       const amount = normalizeAmount(dto.amount);
 
       // 3. Update balance
-      await tx.wallet.update({
+      updatedWallet = await tx.wallet.update({
         where: { id: dto.walletId },
         data: {
           balance: wallet.balance.plus(amount)
@@ -82,24 +84,43 @@ export class WalletsService {
           idempotencyKey: dto.idempotencyKey
         }
       });
-    })
+    });
+    return this.toEntity(updatedWallet!);
   }
 
-  async transfer(id: number, dto: { amount: string | number; idempotencyKey: string }): Promise<void> {
+  async transfer(dto: TransferWalletDto): Promise<Wallet> {
+    let updatedToWallet: PrismaWallet;
     await this.prisma.$transaction(async (tx) => {
+      const fromWallet = await tx.wallet.findUnique({
+        where: { id: +dto.fromWalletId }
+      });
+
+      const toWallet = await tx.wallet.findUnique({
+        where: { id: +dto.toWalletId }
+      });
+
+      if (!fromWallet || !toWallet) {
+        throw new NotFoundException();
+      }
+
+      if (fromWallet.currency !== toWallet.currency) {
+        throw new Error('Currency mismatch');
+      }
+
+      if (fromWallet.status !== 'ACTIVE' || toWallet.status !== 'ACTIVE') {
+        throw new Error('Wallet suspended');
+      }
+
+      if (dto.fromWalletId === dto.toWalletId) {
+        throw new Error('Cannot transfer to same wallet');
+      }
 
       const amount = normalizeAmount(dto.amount);
 
-      const wallet = await tx.wallet.findUnique({
-        where: { id }
-      });
-
-      if (!wallet) throw new NotFoundException();
-
-      const result = await tx.wallet.updateMany({
+      // Atomic debit
+      const debitResult = await tx.wallet.updateMany({
         where: {
-          id: id,
-          status: 'ACTIVE',
+          id: +dto.fromWalletId,
           balance: { gte: amount }
         },
         data: {
@@ -107,20 +128,39 @@ export class WalletsService {
         }
       });
 
-      if (result.count === 0) {
-        throw new Error('Insufficient balance');
+      if (debitResult.count === 0) {
+        throw new BadRequestException('Insufficient balance');
       }
 
-      await tx.ledger.create({
+      // Credit
+      updatedToWallet = await tx.wallet.update({
+        where: { id: +dto.toWalletId },
         data: {
-          walletId: id,
-          type: 'PAYMENT',
-          amount,
-          currency: wallet.currency,
-          idempotencyKey: dto.idempotencyKey
+          balance: { increment: amount }
         }
       });
+
+      // Ledger
+      await tx.ledger.createMany({
+        data: [
+          {
+            walletId: +dto.fromWalletId,
+            type: 'TRANSFER_OUT',
+            amount,
+            currency: fromWallet.currency,
+            idempotencyKey: dto.idempotencyKey + '-OUT'
+          },
+          {
+            walletId: +dto.toWalletId,
+            type: 'TRANSFER_IN',
+            amount,
+            currency: toWallet.currency,
+            idempotencyKey: dto.idempotencyKey + '-IN'
+          }
+        ]
+      });
     });
+    return this.toEntity(updatedToWallet!);
   }
 
   private toEntity(wallet: PrismaWallet): Wallet {

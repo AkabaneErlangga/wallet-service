@@ -1,0 +1,36 @@
+meta {
+  name: Transfer between wallets
+  type: http
+  seq: 7
+  tags: [wallets]
+}
+
+post {
+  url: {{baseUrl}}/api/v1/wallets/transfer
+  body: json
+  auth: inherit
+}
+
+body:json {
+  "fromWalletId": "wallet-1",
+  "toWalletId": "wallet-2",
+  "amount": 500,
+  "idempotencyKey": "transfer-unique-123"
+}
+
+example {
+  name: 200 Response
+  description: Transfer completed successfully
+
+  request: {
+    url: {{baseUrl}}/api/v1/wallets/transfer
+    method: POST
+    mode: json
+    body:json: {
+      "fromWalletId": "wallet-1",
+      "toWalletId": "wallet-2",
+      "amount": 500,
+      "idempotencyKey": "transfer-unique-123"
+    }
+  }
+}
