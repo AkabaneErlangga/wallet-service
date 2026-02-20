@@ -77,6 +77,7 @@ export class WalletsController {
   }
 
   @Post('topup')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Top up a wallet' })
   @ApiOkResponse({ description: 'Wallet topped up successfully', type: Wallet })
   @ApiBadRequestResponse({ description: 'Invalid request body' })
@@ -86,14 +87,15 @@ export class WalletsController {
   }
 
   @Post('transfer')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Transfer funds from a wallet' })
   @ApiOkResponse({ description: 'Funds transferred successfully', type: Wallet })
   @ApiBadRequestResponse({ description: 'Invalid request body or insufficient balance' })
   @ApiBody({
     schema: {
       example: {
-        fromWalletId: 'wallet-1',
-        toWalletId: 'wallet-2',
+        fromWalletId: 1,
+        toWalletId: 2,
         amount: 500,
         idempotencyKey: 'transfer-unique-123',
       },

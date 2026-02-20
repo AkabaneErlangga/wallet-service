@@ -61,7 +61,7 @@ export class WalletsService {
       if (!wallet) throw new NotFoundException();
 
       if (wallet.status !== 'ACTIVE') {
-        throw new Error('Wallet suspended');
+        throw new BadRequestException('Wallet suspended');
       }
 
       const amount = normalizeAmount(dto.amount);
@@ -69,7 +69,7 @@ export class WalletsService {
       updatedWallet = await tx.wallet.update({
         where: { id: dto.walletId },
         data: {
-          balance: { increment: amount }   // 🔥 atomic increment
+          balance: { increment: amount }   
         }
       });
 
@@ -104,15 +104,15 @@ export class WalletsService {
       }
 
       if (fromWallet.currency !== toWallet.currency) {
-        throw new Error('Currency mismatch');
+        throw new BadRequestException('Currency mismatch');
       }
 
       if (fromWallet.status !== 'ACTIVE' || toWallet.status !== 'ACTIVE') {
-        throw new Error('Wallet suspended');
+        throw new BadRequestException('Wallet suspended');
       }
 
       if (dto.fromWalletId === dto.toWalletId) {
-        throw new Error('Cannot transfer to same wallet');
+        throw new BadRequestException('Cannot transfer to same wallet');
       }
 
       const amount = normalizeAmount(dto.amount);

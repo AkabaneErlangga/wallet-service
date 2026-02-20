@@ -1,7 +1,8 @@
-import { IsNumber, IsPositive, IsString } from 'class-validator';
+import { IsInt, IsNumber, IsPositive, IsString, Min } from 'class-validator';
 
 export class TopupWalletDto {
-	@IsNumber()
+	@IsInt()
+	@Min(1)
 	walletId: number;
 
 	@IsNumber()

@@ -1,11 +1,13 @@
-import { IsNumber, IsPositive, IsString } from 'class-validator';
+import { IsInt, IsNumber, IsPositive, IsString, Min } from 'class-validator';
 
 export class TransferWalletDto {
-  @IsString()
-  fromWalletId: string;
+  @IsInt()
+  @Min(1)
+  fromWalletId: number;
 
-  @IsString()
-  toWalletId: string;
+  @IsInt()
+  @Min(1)
+  toWalletId: number;
 
   @IsNumber()
   @IsPositive()
