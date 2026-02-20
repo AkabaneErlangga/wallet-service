@@ -19,6 +19,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { CreateWalletDto } from './dto/create-wallet.dto';
+import { TopupWalletDto } from './dto/topup-wallet.dto';
 import { UpdateWalletDto } from './dto/update-wallet.dto';
 import { Wallet } from './entities/wallet.entity';
 import { WalletsService } from './wallets.service';
@@ -26,7 +27,7 @@ import { WalletsService } from './wallets.service';
 @ApiTags('wallets')
 @Controller('wallets')
 export class WalletsController {
-  constructor(private readonly walletsService: WalletsService) {}
+  constructor(private readonly walletsService: WalletsService) { }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -71,5 +72,14 @@ export class WalletsController {
   @ApiNotFoundResponse({ description: 'Wallet not found' })
   remove(@Param('id') id: string): Promise<void> {
     return this.walletsService.remove(+id);
+  }
+
+  @Post('topup')
+  @ApiOperation({ summary: 'Top up a wallet' })
+  @ApiOkResponse({ description: 'Wallet topped up successfully', type: Wallet })
+  @ApiBadRequestResponse({ description: 'Invalid request body' })
+  topup(
+    @Body() topupWalletDto: TopupWalletDto): Promise<void> {
+    return this.walletsService.topup(topupWalletDto);
   }
 }
