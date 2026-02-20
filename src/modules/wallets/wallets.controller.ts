@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBody,
   ApiCreatedResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
@@ -19,6 +20,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { CreateWalletDto } from './dto/create-wallet.dto';
+import { TopupWalletDto } from './dto/topup-wallet.dto';
+import { TransferWalletDto } from './dto/transfer-wallet.dto';
 import { UpdateWalletDto } from './dto/update-wallet.dto';
 import { Wallet } from './entities/wallet.entity';
 import { WalletsService } from './wallets.service';
@@ -26,7 +29,7 @@ import { WalletsService } from './wallets.service';
 @ApiTags('wallets')
 @Controller('wallets')
 export class WalletsController {
-  constructor(private readonly walletsService: WalletsService) {}
+  constructor(private readonly walletsService: WalletsService) { }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -71,5 +74,35 @@ export class WalletsController {
   @ApiNotFoundResponse({ description: 'Wallet not found' })
   remove(@Param('id') id: string): Promise<void> {
     return this.walletsService.remove(+id);
+  }
+
+  @Post('topup')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Top up a wallet' })
+  @ApiOkResponse({ description: 'Wallet topped up successfully', type: Wallet })
+  @ApiBadRequestResponse({ description: 'Invalid request body' })
+  topup(
+    @Body() topupWalletDto: TopupWalletDto): Promise<Wallet> {
+    return this.walletsService.topup(topupWalletDto);
+  }
+
+  @Post('transfer')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Transfer funds from a wallet' })
+  @ApiOkResponse({ description: 'Funds transferred successfully', type: Wallet })
+  @ApiBadRequestResponse({ description: 'Invalid request body or insufficient balance' })
+  @ApiBody({
+    schema: {
+      example: {
+        fromWalletId: 1,
+        toWalletId: 2,
+        amount: 500,
+        idempotencyKey: 'transfer-unique-123',
+      },
+    },
+  })
+  transfer(
+    @Body() transferWalletDto: TransferWalletDto): Promise<Wallet> {
+    return this.walletsService.transfer(transferWalletDto);
   }
 }

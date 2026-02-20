@@ -1,41 +1,33 @@
 meta {
-  name: Update a wallet by ID
+  name: Create a new wallet
   type: http
-  seq: 4
+  seq: 1
   tags: [
     wallets
   ]
 }
 
-patch {
-  url: {{baseUrl}}/api/v1/wallets/:id
+post {
+  url: {{baseUrl}}/api/v1/wallets
   body: json
   auth: inherit
 }
 
-params:path {
-  id: 
-}
-
 body:json {
   {
-    "ownerId": 1,
+    "ownerId": 6,
     "currency": "USD"
   }
 }
 
 example {
-  name: 200 Response
-  description: Wallet updated successfully
+  name: 201 Response
+  description: Wallet created successfully
   
   request: {
-    url: {{baseUrl}}/api/v1/wallets/:id
-    method: PATCH
+    url: {{baseUrl}}/api/v1/wallets
+    method: POST
     mode: json
-    params:path: {
-      id: 
-    }
-  
     body:json: {
       {
         "ownerId": 1,
@@ -50,8 +42,8 @@ example {
     }
   
     status: {
-      code: 200
-      text: OK
+      code: 201
+      text: Created
     }
   
     body: {
@@ -74,13 +66,9 @@ example {
   description: Invalid request body
   
   request: {
-    url: {{baseUrl}}/api/v1/wallets/:id
-    method: PATCH
+    url: {{baseUrl}}/api/v1/wallets
+    method: POST
     mode: json
-    params:path: {
-      id: 
-    }
-  
     body:json: {
       {
         "ownerId": 1,
@@ -93,41 +81,6 @@ example {
     status: {
       code: 400
       text: Bad Request
-    }
-  
-    body: {
-      type: text
-      content: '''
-  
-      '''
-    }
-  }
-}
-
-example {
-  name: 404 Response
-  description: Wallet not found
-  
-  request: {
-    url: {{baseUrl}}/api/v1/wallets/:id
-    method: PATCH
-    mode: json
-    params:path: {
-      id: 
-    }
-  
-    body:json: {
-      {
-        "ownerId": 1,
-        "currency": "USD"
-      }
-    }
-  }
-  
-  response: {
-    status: {
-      code: 404
-      text: Not Found
     }
   
     body: {

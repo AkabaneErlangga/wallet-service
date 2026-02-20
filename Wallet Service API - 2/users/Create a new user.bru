@@ -1,61 +1,51 @@
 meta {
-  name: Create a new wallet
+  name: Create a new user
   type: http
   seq: 1
   tags: [
-    wallets
+    users
   ]
 }
 
 post {
-  url: {{baseUrl}}/api/v1/wallets
+  url: {{baseUrl}}/api/v1/users
   body: json
   auth: inherit
 }
 
 body:json {
   {
-    "ownerId": 1,
-    "currency": "USD"
+    "email": "user1@example.com",
+    "name": "John Doe"
   }
 }
 
 example {
   name: 201 Response
-  description: Wallet created successfully
+  description: User created successfully
   
   request: {
-    url: {{baseUrl}}/api/v1/wallets
+    url: {{baseUrl}}/api/v1/users
     method: POST
     mode: json
     body:json: {
       {
-        "ownerId": 1,
-        "currency": "USD"
+        "email": "user@example.com",
+        "name": "John Doe"
       }
     }
   }
   
   response: {
-    headers: {
-      Content-Type: application/json
-    }
-  
     status: {
       code: 201
       text: Created
     }
   
     body: {
-      type: json
+      type: text
       content: '''
-        {
-          "id": 1,
-          "ownerId": 1,
-          "currency": "USD",
-          "balance": "0.00",
-          "status": "ACTIVE"
-        }
+  
       '''
     }
   }
@@ -66,13 +56,13 @@ example {
   description: Invalid request body
   
   request: {
-    url: {{baseUrl}}/api/v1/wallets
+    url: {{baseUrl}}/api/v1/users
     method: POST
     mode: json
     body:json: {
       {
-        "ownerId": 1,
-        "currency": "USD"
+        "email": "user@example.com",
+        "name": "John Doe"
       }
     }
   }
