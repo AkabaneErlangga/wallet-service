@@ -51,30 +51,28 @@ export class WalletsService {
 
   async topup(dto: TopupWalletDto): Promise<Wallet> {
     let updatedWallet: PrismaWallet;
+
     await this.prisma.$transaction(async (tx) => {
-      // 1. Find wallet
+
       const wallet = await tx.wallet.findUnique({
         where: { id: dto.walletId }
       });
 
       if (!wallet) throw new NotFoundException();
 
-      if (wallet.status === 'SUSPENDED') {
+      if (wallet.status !== 'ACTIVE') {
         throw new Error('Wallet suspended');
       }
 
-      // 2. Normalize amount
       const amount = normalizeAmount(dto.amount);
 
-      // 3. Update balance
       updatedWallet = await tx.wallet.update({
         where: { id: dto.walletId },
         data: {
-          balance: wallet.balance.plus(amount)
+          balance: { increment: amount }   // 🔥 atomic increment
         }
       });
 
-      // 4. Insert ledger
       await tx.ledger.create({
         data: {
           walletId: dto.walletId,
@@ -84,7 +82,9 @@ export class WalletsService {
           idempotencyKey: dto.idempotencyKey
         }
       });
+
     });
+
     return this.toEntity(updatedWallet!);
   }
 
