@@ -150,44 +150,32 @@ export class WalletsService {
   }
 
   async pay(dto: PayWalletDto): Promise<Wallet> {
-    let updatedWallet: PrismaWallet
+    let updatedWallet: PrismaWallet;
     await this.prisma.$transaction(async (tx) => {
-
       const amount = normalizeAmount(dto.amount);
-
-      const wallet = await tx.wallet.findUnique({
-        where: { id: +dto.id }
-      });
-
-      const result = await tx.wallet.updateMany({
-        where: {
-          id: dto.id,
-          status: 'ACTIVE',
-          balance: { gte: amount }
-        },
-        data: {
-          balance: { decrement: amount }
-        }
-      });
-
-      if (result.count === 0) {
+      const wallet = await tx.wallet.findUnique({ where: { id: +dto.id } });
+      if (!wallet) throw new NotFoundException();
+      if (wallet.status !== 'ACTIVE') {
+        throw new BadRequestException('Wallet suspended');
+      }
+      if (wallet.balance.lt(amount)) {
         throw new BadRequestException('Insufficient balance');
       }
-
+      updatedWallet = await tx.wallet.update({
+        where: { id: +dto.id },
+        data: { balance: { decrement: amount } },
+      });
       await tx.ledger.create({
         data: {
           walletId: dto.id,
           type: 'PAYMENT',
           amount,
           currency: wallet.currency,
-          idempotencyKey: dto.idempotencyKey
-        }
+          idempotencyKey: dto.idempotencyKey,
+        },
       });
-      updatedWallet = await tx.wallet.findUnique({
-        where: {id: +dto.id}
-      })
     });
-    return this.toEntity(updatedWallet)
+    return this.toEntity(updatedWallet);
   }
 
   private toEntity(wallet: PrismaWallet): Wallet {
