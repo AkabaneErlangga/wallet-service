@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post
 } from '@nestjs/common';
 import {
@@ -20,7 +21,7 @@ import { CreateWalletDto } from './dto/create-wallet.dto';
 import { PayWalletDto } from './dto/pay-wallet.dto';
 import { TopupWalletDto } from './dto/topup-wallet.dto';
 import { TransferWalletDto } from './dto/transfer-wallet.dto';
-import { Wallet } from './entities/wallet.entity';
+import { Wallet, WalletStatus } from './entities/wallet.entity';
 import { WalletsService } from './wallets.service';
 
 @ApiTags('wallets')
@@ -108,5 +109,17 @@ export class WalletsController {
   pay(
     @Body() payWalletDto: PayWalletDto): Promise<Wallet> {
     return this.walletsService.pay(payWalletDto);
+  }
+
+  @Patch(':id/status')
+  @ApiOperation({ summary: 'Update wallet status' })
+  @ApiOkResponse({ description: 'Wallet status updated successfully', type: Wallet })
+  @ApiBadRequestResponse({ description: 'Invalid status or request body' })
+  @ApiNotFoundResponse({ description: 'Wallet not found' })
+  updateStatus(
+    @Param('id') id: string,
+    @Body('status') status: WalletStatus,
+  ): Promise<Wallet> {
+    return this.walletsService.updateStatus(+id, status);
   }
 }

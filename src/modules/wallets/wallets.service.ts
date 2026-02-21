@@ -178,6 +178,16 @@ export class WalletsService {
     return this.toEntity(updatedWallet);
   }
 
+  async updateStatus(id: number, status: WalletStatus): Promise<Wallet> {
+    const wallet = await this.prisma.wallet.findUnique({ where: { id } });
+    if (!wallet) throw new NotFoundException('Wallet not found');
+    const updated = await this.prisma.wallet.update({
+      where: { id },
+      data: { status },
+    });
+    return this.toEntity(updated);
+  }
+
   private toEntity(wallet: PrismaWallet): Wallet {
     const entity = new Wallet();
     entity.id = wallet.id;
