@@ -3,9 +3,9 @@ import { Prisma, Wallet as PrismaWallet } from '@prisma/client';
 import { normalizeAmount } from 'src/common/utils/money.util';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
 import { CreateWalletDto } from './dto/create-wallet.dto';
+import { PayWalletDto } from './dto/pay-wallet.dto';
 import { TopupWalletDto } from './dto/topup-wallet.dto';
 import { TransferWalletDto } from './dto/transfer-wallet.dto';
-import { UpdateWalletDto } from './dto/update-wallet.dto';
 import { Wallet, WalletStatus } from './entities/wallet.entity';
 
 @Injectable()
@@ -35,20 +35,6 @@ export class WalletsService {
     return this.toEntity(wallet);
   }
 
-  async update(id: number, updateWalletDto: UpdateWalletDto): Promise<Wallet> {
-    await this.findOne(id);
-    const data: Prisma.WalletUncheckedUpdateInput = {
-      ...(updateWalletDto.currency && { currency: updateWalletDto.currency }),
-    };
-    const wallet = await this.prisma.wallet.update({ where: { id }, data });
-    return this.toEntity(wallet);
-  }
-
-  async remove(id: number): Promise<void> {
-    await this.findOne(id);
-    await this.prisma.wallet.delete({ where: { id } });
-  }
-
   async topup(dto: TopupWalletDto): Promise<Wallet> {
     let updatedWallet: PrismaWallet;
 
@@ -69,7 +55,7 @@ export class WalletsService {
       updatedWallet = await tx.wallet.update({
         where: { id: dto.walletId },
         data: {
-          balance: { increment: amount }   
+          balance: { increment: amount }
         }
       });
 
@@ -161,6 +147,47 @@ export class WalletsService {
       });
     });
     return this.toEntity(updatedToWallet!);
+  }
+
+  async pay(dto: PayWalletDto): Promise<Wallet> {
+    let updatedWallet: PrismaWallet
+    await this.prisma.$transaction(async (tx) => {
+
+      const amount = normalizeAmount(dto.amount);
+
+      const wallet = await tx.wallet.findUnique({
+        where: { id: +dto.id }
+      });
+
+      const result = await tx.wallet.updateMany({
+        where: {
+          id: dto.id,
+          status: 'ACTIVE',
+          balance: { gte: amount }
+        },
+        data: {
+          balance: { decrement: amount }
+        }
+      });
+
+      if (result.count === 0) {
+        throw new BadRequestException('Insufficient balance');
+      }
+
+      await tx.ledger.create({
+        data: {
+          walletId: dto.id,
+          type: 'PAYMENT',
+          amount,
+          currency: wallet.currency,
+          idempotencyKey: dto.idempotencyKey
+        }
+      });
+      updatedWallet = await tx.wallet.findUnique({
+        where: {id: +dto.id}
+      })
+    });
+    return this.toEntity(updatedWallet)
   }
 
   private toEntity(wallet: PrismaWallet): Wallet {

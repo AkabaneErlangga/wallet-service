@@ -1,28 +1,25 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   HttpCode,
   HttpStatus,
   Param,
-  Patch,
-  Post,
+  Post
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBody,
   ApiCreatedResponse,
-  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
-  ApiTags,
+  ApiTags
 } from '@nestjs/swagger';
 import { CreateWalletDto } from './dto/create-wallet.dto';
+import { PayWalletDto } from './dto/pay-wallet.dto';
 import { TopupWalletDto } from './dto/topup-wallet.dto';
 import { TransferWalletDto } from './dto/transfer-wallet.dto';
-import { UpdateWalletDto } from './dto/update-wallet.dto';
 import { Wallet } from './entities/wallet.entity';
 import { WalletsService } from './wallets.service';
 
@@ -55,32 +52,20 @@ export class WalletsController {
     return this.walletsService.findOne(+id);
   }
 
-  @Patch(':id')
-  @ApiOperation({ summary: 'Update a wallet by ID' })
-  @ApiOkResponse({ description: 'Wallet updated successfully', type: Wallet })
-  @ApiNotFoundResponse({ description: 'Wallet not found' })
-  @ApiBadRequestResponse({ description: 'Invalid request body' })
-  update(
-    @Param('id') id: string,
-    @Body() updateWalletDto: UpdateWalletDto,
-  ): Promise<Wallet> {
-    return this.walletsService.update(+id, updateWalletDto);
-  }
-
-  @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Delete a wallet by ID' })
-  @ApiNoContentResponse({ description: 'Wallet deleted successfully' })
-  @ApiNotFoundResponse({ description: 'Wallet not found' })
-  remove(@Param('id') id: string): Promise<void> {
-    return this.walletsService.remove(+id);
-  }
-
   @Post('topup')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Top up a wallet' })
   @ApiOkResponse({ description: 'Wallet topped up successfully', type: Wallet })
   @ApiBadRequestResponse({ description: 'Invalid request body' })
+  @ApiBody({
+    schema: {
+      example: {
+        walletId: 1,
+        amount: 500,
+        idempotencyKey: 'topup-unique-123',
+      },
+    },
+  })
   topup(
     @Body() topupWalletDto: TopupWalletDto): Promise<Wallet> {
     return this.walletsService.topup(topupWalletDto);
@@ -104,5 +89,24 @@ export class WalletsController {
   transfer(
     @Body() transferWalletDto: TransferWalletDto): Promise<Wallet> {
     return this.walletsService.transfer(transferWalletDto);
+  }
+
+  @Post('pay')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Pay from a wallet' })
+  @ApiOkResponse({ description: 'Payment successfully', type: Wallet })
+  @ApiBadRequestResponse({ description: 'Invalid request body or insufficient balance' })
+  @ApiBody({
+    schema: {
+      example: {
+        id: 1,
+        amount: 500,
+        idempotencyKey: 'payment-unique-123',
+      },
+    },
+  })
+  pay(
+    @Body() payWalletDto: PayWalletDto): Promise<Wallet> {
+    return this.walletsService.pay(payWalletDto);
   }
 }
