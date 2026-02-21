@@ -1,10 +1,355 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# Wallet Service
 
-# NestJS Template
+A production-ready wallet service built with **NestJS**, **Prisma**, and **PostgreSQL** — supporting multi-currency wallets, top-ups, payments, and transfers with idempotency and atomic ledger entries.
 
-A production-ready NestJS template with essential configurations and best practices.
+---
+
+## Table of Contents
+
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Prerequisites](#prerequisites)
+- [Getting Started](#getting-started)
+- [Running the App](#running-the-app)
+- [Running Tests](#running-tests)
+- [API Reference](#api-reference)
+  - [Users](#users)
+  - [Wallets](#wallets)
+- [Swagger UI](#swagger-ui)
+- [Environment Variables](#environment-variables)
+- [Database Schema](#database-schema)
+
+---
+
+## Features
+
+- 👤 User management (create, list, get by ID)
+- 💳 Multi-currency wallet management
+- ⬆️ Top-up wallets
+- 💸 Payments from wallet
+- 🔄 Wallet-to-wallet transfers
+- 🔐 Idempotency keys on all financial operations
+- 📒 Immutable ledger for every transaction
+- 🛑 Wallet status management (ACTIVE / SUSPENDED)
+- 📖 Swagger/OpenAPI documentation
+- 🪵 Structured logging with Pino
+- ✅ Unit tests (Bun test runner)
+
+---
+
+## Tech Stack
+
+| Layer       | Technology                 |
+|-------------|----------------------------|
+| Framework   | NestJS 11                  |
+| Language    | TypeScript 5               |
+| ORM         | Prisma 6                   |
+| Database    | PostgreSQL                 |
+| Validation  | class-validator            |
+| Docs        | @nestjs/swagger            |
+| Logger      | nestjs-pino / pino         |
+| Test runner | Bun                        |
+
+---
+
+## Prerequisites
+
+- [Bun](https://bun.sh) ≥ 1.0
+- Node.js ≥ 18 (for NestJS CLI)
+- PostgreSQL ≥ 14
+
+---
+
+## Getting Started
+
+```bash
+# 1. Clone the repository
+git clone <repo-url>
+cd wallet-service
+
+# 2. Install dependencies
+bun install
+
+# 3. Copy environment file and configure
+cp .env.example .env
+# Edit .env and set DATABASE_URL
+
+# 4. Run database migrations
+bunx prisma migrate dev --name init
+
+# 5. Generate Prisma client
+bunx prisma generate
+```
+
+---
+
+## Running the App
+
+```bash
+# Development (watch mode)
+bun run start:dev
+
+# Production build
+bun run build
+bun run start:prod
+```
+
+The server starts on **http://localhost:3000** by default.
+Swagger docs on **http://localhost:3000/docs**
+
+---
+
+## Running Tests
+
+```bash
+# Run all unit tests with Bun
+bun test
+
+# Run a specific spec file
+bun test src/modules/wallets/wallets.service.spec.ts
+bun test src/modules/wallets/wallets.controller.spec.ts
+bun test src/modules/users/users.service.spec.ts
+bun test src/modules/users/users.controller.spec.ts
+
+# Run all specs matching a pattern
+bun test src/modules/wallets
+
+# Run with Jest (alternative)
+npm run test
+npm run test:cov
+```
+
+---
+
+## API Reference
+
+All endpoints are prefixed with `/api/v1`.
+
+### Users
+
+#### Create a user
+
+```bash
+curl --request POST \
+  --url http://localhost:3000/api/v1/users \
+  --header 'content-type: application/json' \
+  --data '{
+    "email": "alice@example.com",
+    "name": "Alice"
+  }'
+```
+
+```json
+{
+  "id": 1,
+  "email": "alice@example.com",
+  "name": "Alice",
+  "createdAt": "2026-02-21T10:00:00.000Z"
+}
+```
+
+#### List all users
+
+```bash
+curl http://localhost:3000/api/v1/users
+```
+
+#### Get user by ID
+
+```bash
+curl http://localhost:3000/api/v1/users/1
+```
+
+---
+
+### Wallets
+
+#### Create a wallet
+
+```bash
+curl --request POST \
+  --url http://localhost:3000/api/v1/wallets \
+  --header 'content-type: application/json' \
+  --data '{
+    "ownerId": 1,
+    "currency": "USD"
+  }'
+```
+
+```json
+{
+  "id": 1,
+  "ownerId": 1,
+  "currency": "USD",
+  "balance": "0",
+  "status": "ACTIVE"
+}
+```
+
+> Each owner can have only **one wallet per currency**.
+
+#### List all wallets
+
+```bash
+curl http://localhost:3000/api/v1/wallets
+```
+
+#### Get wallet by ID
+
+```bash
+curl http://localhost:3000/api/v1/wallets/1
+```
+
+#### Top up a wallet
+
+```bash
+curl --request POST \
+  --url http://localhost:3000/api/v1/wallets/topup \
+  --header 'content-type: application/json' \
+  --data '{
+    "walletId": 1,
+    "amount": 500,
+    "idempotencyKey": "topup-2026-001"
+  }'
+```
+
+```json
+{
+  "id": 1,
+  "ownerId": 1,
+  "currency": "USD",
+  "balance": "500",
+  "status": "ACTIVE"
+}
+```
+
+#### Pay from a wallet
+
+```bash
+curl --request POST \
+  --url http://localhost:3000/api/v1/wallets/pay \
+  --header 'content-type: application/json' \
+  --data '{
+    "id": 1,
+    "amount": 50,
+    "idempotencyKey": "pay-2026-001"
+  }'
+```
+
+```json
+{
+  "id": 1,
+  "ownerId": 1,
+  "currency": "USD",
+  "balance": "450",
+  "status": "ACTIVE"
+}
+```
+
+> Returns `400 Bad Request` if balance is insufficient or wallet is suspended.
+
+#### Transfer between wallets
+
+```bash
+curl --request POST \
+  --url http://localhost:3000/api/v1/wallets/transfer \
+  --header 'content-type: application/json' \
+  --data '{
+    "fromWalletId": 1,
+    "toWalletId": 2,
+    "amount": 100,
+    "idempotencyKey": "transfer-2026-001"
+  }'
+```
+
+```json
+{
+  "id": 2,
+  "ownerId": 2,
+  "currency": "USD",
+  "balance": "600",
+  "status": "ACTIVE"
+}
+```
+
+> Returns the **destination** wallet. Returns `400 Bad Request` on currency mismatch, insufficient balance, or suspended wallets.
+
+#### Update wallet status
+
+```bash
+curl --request PATCH \
+  --url http://localhost:3000/api/v1/wallets/1/status \
+  --header 'content-type: application/json' \
+  --data '{ "status": "SUSPENDED" }'
+```
+
+```json
+{
+  "id": 1,
+  "ownerId": 1,
+  "currency": "USD",
+  "balance": "450",
+  "status": "SUSPENDED"
+}
+```
+
+---
+
+## Swagger UI
+
+Interactive API documentation is available at:
+
+```
+http://localhost:3000/docs
+```
+
+Import the raw OpenAPI JSON spec into Postman, Insomnia, Bruno, or Hoppscotch:
+
+```
+http://localhost:3000/docs-json
+```
+
+---
+
+## Environment Variables
+
+| Variable       | Description                        | Example                                          |
+|----------------|------------------------------------|--------------------------------------------------|
+| `DATABASE_URL` | PostgreSQL connection string       | `postgresql://user:pass@localhost:5432/wallets`  |
+| `PORT`         | HTTP port (default: `3000`)        | `3000`                                           |
+
+---
+
+## Database Schema
+
+```
+User
+ ├── id          Int       PK
+ ├── email       String    unique
+ ├── name        String?
+ ├── createdAt   DateTime
+ └── wallets     Wallet[]
+
+Wallet
+ ├── id          Int       PK
+ ├── ownerId     Int       FK → User.id
+ ├── currency    String
+ ├── balance     Decimal(30,2)
+ ├── status      ACTIVE | SUSPENDED
+ ├── createdAt   DateTime
+ └── ledgers     Ledger[]
+ ── unique(ownerId, currency)
+
+Ledger
+ ├── id              Int       PK
+ ├── walletId        Int       FK → Wallet.id
+ ├── type            TOPUP | PAYMENT | TRANSFER_IN | TRANSFER_OUT
+ ├── amount          Decimal(30,2)
+ ├── currency        String
+ ├── idempotencyKey  String?   unique
+ └── createdAt       DateTime
+```
+
 
 ## Features
 
